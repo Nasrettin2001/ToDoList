@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>İş Listesi</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b6cf6'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script>
+    // Temayı ilk boyamadan önce uygula
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('isListesi.theme'); } catch (e) {}
+      if (!t) t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">✓</span>
+      <span class="brand-name">İş Listesi</span>
+    </div>
+    <div class="search">
+      <input id="search" type="search" placeholder="Ara… ( / )" autocomplete="off">
+    </div>
+    <div class="top-actions">
+      <select id="sort" title="Sırala">
+        <option value="due">Son tarihe göre</option>
+        <option value="priority">Önceliğe göre</option>
+        <option value="created">Eklenme sırasına göre</option>
+      </select>
+      <button id="themeBtn" class="icon-btn" title="Tema değiştir (T)" aria-label="Tema değiştir"></button>
+      <div class="menu-wrap">
+        <button id="menuBtn" class="icon-btn" title="Menü" aria-label="Menü">⋯</button>
+        <div id="menu" class="menu" hidden>
+          <button data-action="export">⬇ Yedeği dışa aktar</button>
+          <button data-action="import">⬆ Yedeği içe aktar</button>
+          <button data-action="notify">🔔 Bildirim iznini kontrol et</button>
+          <button data-action="shortcuts">⌨ Klavye kısayolları</button>
+        </div>
+      </div>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-group" id="views">
+        <button class="nav-item" data-view="today"><span>📅 Bugün</span><b data-count="today"></b></button>
+        <button class="nav-item" data-view="upcoming"><span>🗓 Yaklaşan</span><b data-count="upcoming"></b></button>
+        <button class="nav-item" data-view="overdue"><span>⚠ Gecikmiş</span><b data-count="overdue"></b></button>
+        <button class="nav-item" data-view="all"><span>📋 Tümü</span><b data-count="all"></b></button>
+        <button class="nav-item" data-view="done"><span>✅ Tamamlanan</span><b data-count="done"></b></button>
+      </div>
+      <div class="nav-title">Etiketler</div>
+      <div class="nav-group" id="tagList"></div>
+    </nav>
+
+    <main class="main">
+      <form id="quickAdd" class="quick-add" autocomplete="off">
+        <input id="quickTitle" type="text" placeholder="+ Yeni görev yaz, Enter'a bas… ( N )" maxlength="300">
+        <button type="submit" class="btn primary">Ekle</button>
+      </form>
+      <div class="list-head">
+        <h1 id="viewTitle">Tümü</h1>
+        <span id="activeFilter" class="active-filter" hidden></span>
+      </div>
+      <ul id="taskList" class="task-list"></ul>
+      <div id="empty" class="empty" hidden></div>
+    </main>
+
+    <aside id="detail" class="detail" hidden>
+      <div class="detail-head">
+        <label class="check big"><input type="checkbox" id="dCompleted"><span></span></label>
+        <input id="dTitle" class="d-title" type="text" maxlength="300" placeholder="Görev başlığı">
+        <button id="dClose" class="icon-btn" title="Kapat (Esc)" aria-label="Kapat">✕</button>
+      </div>
+      <div class="detail-body">
+        <div class="field-row">
+          <label class="field">
+            <span>Öncelik</span>
+            <select id="dPriority">
+              <option value="0">Düşük</option>
+              <option value="1">Normal</option>
+              <option value="2">Yüksek</option>
+              <option value="3">Acil</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Son tarih</span>
+            <input id="dDue" type="date">
+          </label>
+        </div>
+
+        <div class="field">
+          <span>🔔 Hatırlatıcı</span>
+          <div class="field-row">
+            <input id="dReminder" type="datetime-local">
+            <select id="dRepeat" title="Tekrar">
+              <option value="none">Tekrar yok</option>
+              <option value="daily">Her gün</option>
+              <option value="weekdays">Hafta içi her gün</option>
+              <option value="weekly">Her hafta</option>
+              <option value="monthly">Her ay</option>
+            </select>
+          </div>
+          <div class="chips">
+            <button type="button" class="chip" data-quick="1h">1 saat sonra</button>
+            <button type="button" class="chip" data-quick="tomorrow">Yarın 09:00</button>
+            <button type="button" class="chip" data-quick="monday">Pazartesi 09:00</button>
+            <button type="button" class="chip ghost" data-quick="clear">Kaldır</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span>Etiketler</span>
+          <div id="dTags" class="tag-editor">
+            <input id="dTagInput" type="text" placeholder="etiket yaz, Enter…" maxlength="40">
+          </div>
+        </div>
+
+        <div class="field">
+          <span>Alt görevler <em id="dSubProgress"></em></span>
+          <ul id="dSubtasks" class="subtasks"></ul>
+          <input id="dSubInput" type="text" placeholder="+ Alt görev ekle, Enter…" maxlength="200">
+        </div>
+
+        <label class="field">
+          <span>📝 Notlar</span>
+          <textarea id="dNotes" rows="6" placeholder="Bu görevle ilgili notlar…"></textarea>
+        </label>
+
+        <div class="field">
+          <span>🖼 Resimler</span>
+          <div id="dImages" class="images"></div>
+          <div id="dropZone" class="drop-zone">
+            Resmi buraya sürükle, <button type="button" id="dAddImage" class="link">dosya seç</button> veya Ctrl+V ile yapıştır
+          </div>
+          <input id="dImageFile" type="file" accept="image/*" multiple hidden>
+        </div>
+
+        <div class="detail-meta" id="dMeta"></div>
+        <div class="detail-actions">
+          <button id="dDelete" class="btn danger">Sil</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div id="lightbox" class="lightbox" hidden>
+    <img id="lightboxImg" alt="">
+    <button class="icon-btn lb-close" id="lbClose" aria-label="Kapat">✕</button>
+  </div>
+
+  <div id="modal" class="modal" hidden>
+    <div class="modal-box">
+      <h2 id="modalTitle"></h2>
+      <div id="modalBody"></div>
+      <div class="modal-actions"><button class="btn primary" id="modalOk">Tamam</button></div>
+    </div>
+  </div>
+
+  <div id="alerts" class="alerts" aria-live="assertive"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="js/db.js"></script>
+  <script src="js/reminders.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

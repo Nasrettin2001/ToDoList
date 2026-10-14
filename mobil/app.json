@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "İş Listesi",
+    "slug": "isListesi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#3B6CF6",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Görevlere resim eklemek için galerine erişim gerekiyor.",
+          "cameraPermission": "Görevlere fotoğraf eklemek için kamera erişimi gerekiyor."
+        }
+      ],
+      "expo-notifications",
+      "expo-sharing",
+      "expo-font"
+    ]
+  }
+}

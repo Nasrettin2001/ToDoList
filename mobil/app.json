@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "İş Listesi",
-    "slug": "islistesi",
+    "slug": "isListesi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

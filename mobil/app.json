@@ -17,9 +17,6 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
       "package": "com.nasrettinuygulama.islistesi"
     },
     "web": {
@@ -35,7 +32,8 @@
       ],
       "expo-notifications",
       "expo-sharing",
-      "expo-font"
+      "expo-font",
+      "expo-system-ui"
     ],
     "extra": {
       "eas": {

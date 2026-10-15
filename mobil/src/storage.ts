@@ -70,6 +70,7 @@ function normalize(t: Partial<Task>): Task {
     reminder: t.reminder ? { ...t.reminder, notificationIds: t.reminder.notificationIds ?? [] } : null,
     subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
     images: Array.isArray(t.images) ? t.images : [],
+    listId: t.listId ?? 'general',
     completed: !!t.completed,
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt ?? now,

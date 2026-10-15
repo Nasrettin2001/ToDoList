@@ -20,7 +20,7 @@ import { normalizeTag } from '../filters';
 import { pickFromLibrary, takePhoto } from '../images';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
-import { PRIORITY_NAMES, REPEAT_NAMES, uid, type Priority, type Repeat, type Task } from '../types';
+import { DEFAULT_LISTS, PRIORITY_NAMES, REPEAT_NAMES, uid, type Priority, type Repeat, type Task } from '../types';
 import { Chip } from './Chip';
 import { DateTimeField } from './DateTimeField';
 import { ImageViewer } from './ImageViewer';
@@ -125,6 +125,14 @@ function DetailBody({ task: t }: { task: Task }) {
             <View style={styles.wrapRow}>
               {([0, 1, 2, 3] as Priority[]).map((p) => (
                 <Chip key={p} label={PRIORITY_NAMES[p]} active={t.priority === p} color={prioColor(p)} onPress={() => set(() => ({ priority: p }))} />
+              ))}
+            </View>
+          </Section>
+
+          <Section title="📁 Liste">
+            <View style={styles.wrapRow}>
+              {DEFAULT_LISTS.map((l) => (
+                <Chip key={l.id} label={l.name} active={t.listId === l.id} color={l.color} onPress={() => set(() => ({ listId: l.id }))} />
               ))}
             </View>
           </Section>

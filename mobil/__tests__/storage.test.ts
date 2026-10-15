@@ -49,6 +49,7 @@ describe('storage', () => {
       reminder: null,
       subtasks: [] as { id: string; text: string; done: boolean }[],
       images: [] as { id: string; uri: string; width: number; height: number }[],
+      listId: 'general',
       completed: false,
       completedAt: null,
       createdAt: Date.now(),

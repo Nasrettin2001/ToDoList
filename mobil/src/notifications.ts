@@ -1,4 +1,5 @@
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import type * as NotificationsType from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { Task } from './types';
 
@@ -7,17 +8,26 @@ export const CATEGORY = 'reminder';
 export const ACTION_SNOOZE = 'snooze10';
 export const ACTION_DONE = 'done';
 
-// Uygulama açıkken de bildirimi göster
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+export const isExpoGo = Constants.executionEnvironment === 'storeClient';
+
+// Expo Go'da expo-notifications modülünü hiç yükleme — import anında crash veriyor
+const Notifications: typeof NotificationsType | null = isExpoGo
+  ? null
+  : require('expo-notifications');
+
+if (Notifications) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
 export async function setupNotifications(): Promise<void> {
+  if (!Notifications) return;
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync(CHANNEL, {
@@ -31,12 +41,11 @@ export async function setupNotifications(): Promise<void> {
       { identifier: ACTION_SNOOZE, buttonTitle: '10 dk ertele', options: { opensAppToForeground: true } },
       { identifier: ACTION_DONE, buttonTitle: 'Tamamla', options: { opensAppToForeground: true } },
     ]);
-  } catch {
-    /* bazı ortamlarda kategori desteklenmeyebilir */
-  }
+  } catch {}
 }
 
 export async function ensurePermission(): Promise<boolean> {
+  if (!Notifications) return false;
   const cur = await Notifications.getPermissionsAsync();
   if (cur.granted) return true;
   if (!cur.canAskAgain) return false;
@@ -45,15 +54,36 @@ export async function ensurePermission(): Promise<boolean> {
 }
 
 export async function cancelIds(ids: string[]): Promise<void> {
+  if (!Notifications) return;
   await Promise.all(ids.map((id) => Notifications.cancelScheduledNotificationAsync(id).catch(() => {})));
 }
 
-// Görevin hatırlatıcısını telefon bildirimleri olarak planlar, planlanan kimlikleri döner
+export async function setBadgeCount(count: number): Promise<void> {
+  if (!Notifications) return;
+  Notifications.setBadgeCountAsync(count).catch(() => {});
+}
+
+export function getLastResponse(): unknown {
+  if (!Notifications) return null;
+  try { return Notifications.getLastNotificationResponse(); } catch { return null; }
+}
+
+export function clearLastResponse(): void {
+  if (!Notifications) return;
+  try { Notifications.clearLastNotificationResponse(); } catch {}
+}
+
+export function addResponseListener(cb: (resp: any) => void): { remove: () => void } | null {
+  if (!Notifications) return null;
+  return Notifications.addNotificationResponseReceivedListener(cb);
+}
+
 export async function scheduleTask(task: Task): Promise<string[]> {
+  if (!Notifications) return [];
   const r = task.reminder;
   if (!r || task.completed) return [];
   const now = Date.now();
-  const content: Notifications.NotificationContentInput = {
+  const content: NotificationsType.NotificationContentInput = {
     title: '⏰ Hatırlatıcı',
     body: task.title,
     data: { taskId: task.id },
@@ -65,7 +95,7 @@ export async function scheduleTask(task: Task): Promise<string[]> {
   const d = new Date(r.at);
   const hour = d.getHours();
   const minute = d.getMinutes();
-  const triggers: Notifications.NotificationTriggerInput[] = [];
+  const triggers: NotificationsType.NotificationTriggerInput[] = [];
 
   switch (r.repeat) {
     case 'none':
@@ -90,9 +120,7 @@ export async function scheduleTask(task: Task): Promise<string[]> {
   for (const trigger of triggers) {
     try {
       ids.push(await Notifications.scheduleNotificationAsync({ content, trigger }));
-    } catch {
-      /* planlanamayan tetikleyiciyi atla */
-    }
+    } catch {}
   }
   return ids;
 }

@@ -15,6 +15,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     reminder: null,
     subtasks: [],
     images: [],
+    listId: 'general',
     completed: false,
     completedAt: null,
     createdAt: now,

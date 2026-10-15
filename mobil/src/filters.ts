@@ -11,6 +11,11 @@ export function nextReminder(t: Task): number | null {
   return times.length ? Math.min(...times) : null;
 }
 
+function completedToday(t: Task): boolean {
+  if (!t.completed || !t.completedAt) return false;
+  return dateStr(new Date(t.completedAt)) === todayStr();
+}
+
 export function inView(t: Task, view: View): boolean {
   const today = todayStr();
   const rem = nextReminder(t);
@@ -19,13 +24,13 @@ export function inView(t: Task, view: View): boolean {
     case 'done':
       return t.completed;
     case 'all':
-      return !t.completed;
+      return !t.completed || completedToday(t);
     case 'today':
-      return !t.completed && ((!!t.dueDate && t.dueDate <= today) || remDay === today);
+      return (!t.completed && ((!!t.dueDate && t.dueDate <= today) || remDay === today)) || completedToday(t);
     case 'upcoming': {
       const end = addDays(today, 7);
       const inRange = (d: string | null) => !!d && d > today && d <= end;
-      return !t.completed && (inRange(t.dueDate) || inRange(remDay));
+      return (!t.completed && (inRange(t.dueDate) || inRange(remDay))) || completedToday(t);
     }
     case 'overdue':
       return !t.completed && !!t.dueDate && t.dueDate < today;
@@ -42,12 +47,16 @@ export function matchesSearch(t: Task, q: string): boolean {
 
 export function sortTasks(list: Task[], mode: SortMode, view: View): Task[] {
   if (view === 'done') return [...list].sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0));
-  if (mode === 'manual') return [...list].sort((a, b) => a.order - b.order);
+  if (mode === 'manual') return [...list].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    return a.order - b.order;
+  });
   const byDue = (a: Task, b: Task) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999');
   const byPrio = (a: Task, b: Task) => b.priority - a.priority;
   const byCreated = (a: Task, b: Task) => b.createdAt - a.createdAt;
   const chain = mode === 'priority' ? [byPrio, byDue, byCreated] : mode === 'created' ? [byCreated] : [byDue, byPrio, byCreated];
   return [...list].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
     for (const f of chain) {
       const r = f(a, b);
       if (r) return r;

@@ -1,6 +1,20 @@
 export type Priority = 0 | 1 | 2 | 3;
 export type Repeat = 'none' | 'daily' | 'weekdays' | 'weekly' | 'monthly';
 export type View = 'today' | 'upcoming' | 'overdue' | 'all' | 'done';
+
+export interface TaskList {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+}
+
+export const DEFAULT_LISTS: TaskList[] = [
+  { id: 'general', name: 'Genel', color: '#3b6cf6', icon: 'list' },
+  { id: 'personal', name: 'Kişisel', color: '#30a46c', icon: 'person' },
+  { id: 'work', name: 'İş', color: '#f08c00', icon: 'briefcase' },
+  { id: 'shopping', name: 'Alışveriş', color: '#e5484d', icon: 'cart' },
+];
 export type SortMode = 'due' | 'priority' | 'created' | 'manual';
 
 export interface Reminder {
@@ -36,6 +50,7 @@ export interface Task {
   reminder: Reminder | null;
   subtasks: Subtask[];
   images: TaskImage[];
+  listId: string;
   completed: boolean;
   completedAt: number | null;
   createdAt: number;

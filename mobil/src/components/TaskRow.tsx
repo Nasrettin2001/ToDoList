@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 import { fmtDateTime, fmtDue } from '../dates';
 import { nextReminder } from '../filters';
 import { useTheme } from '../theme';
-import { PRIORITY_NAMES, type Task } from '../types';
+import { DEFAULT_LISTS, PRIORITY_NAMES, type Task } from '../types';
 
 interface Props {
   task: Task;
@@ -27,6 +27,8 @@ function TaskRowInner({ task: t, onPress, onToggle, onLongPress, onTagPress, sty
   if (t.subtasks.length) meta.push({ key: 'sub', text: `☑ ${doneSubs}/${t.subtasks.length}` });
   if (t.images.length) meta.push({ key: 'img', text: '📎 ' + t.images.length });
   if (t.notes.trim()) meta.push({ key: 'note', text: '📝' });
+  const listDef = DEFAULT_LISTS.find((l) => l.id === t.listId);
+  if (listDef && t.listId !== 'general') meta.push({ key: 'list', text: '📁 ' + listDef.name, color: listDef.color });
 
   return (
     <Pressable
@@ -74,7 +76,7 @@ function TaskRowInner({ task: t, onPress, onToggle, onLongPress, onTagPress, sty
 export const TaskRow = memo(TaskRowInner);
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', borderWidth: 1, borderLeftWidth: 4, borderRadius: 12, paddingVertical: 12, paddingRight: 12, marginBottom: 8 },
+  row: { flexDirection: 'row', borderWidth: 1, borderLeftWidth: 4, borderRadius: 14, paddingVertical: 14, paddingRight: 14, marginBottom: 10, elevation: 1, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, shadowOffset: { width: 0, height: 1 } },
   checkWrap: { paddingHorizontal: 12, paddingTop: 1 },
   check: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1 },

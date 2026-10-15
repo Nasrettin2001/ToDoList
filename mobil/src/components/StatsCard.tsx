@@ -37,7 +37,7 @@ export function StatsCard({ taskCount }: { taskCount: number }) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginHorizontal: 16, marginBottom: 12, borderWidth: 1, borderRadius: 12, padding: 12 },
+  card: { marginBottom: 12, borderWidth: 1, borderRadius: 14, padding: 14 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   text: { fontSize: 14 },
   bar: { height: 6, borderRadius: 3, marginTop: 8, overflow: 'hidden' },

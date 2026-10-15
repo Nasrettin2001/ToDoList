@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { exportBackup, importBackup } from './backup';
@@ -8,13 +7,19 @@ import { deleteImageFile } from './images';
 import {
   ACTION_DONE,
   ACTION_SNOOZE,
+  addResponseListener,
   cancelIds,
+  clearLastResponse,
   ensurePermission,
+  getLastResponse,
+  isExpoGo,
   scheduleTask,
+  setBadgeCount,
   setupNotifications,
 } from './notifications';
 import { loadPref, loadTasks, savePref, saveTasks } from './storage';
 import { uid, type Repeat, type SortMode, type Task, type TaskImage, type View } from './types';
+import { DEFAULT_LISTS } from './types';
 
 export interface SnackMsg {
   id: number;
@@ -34,8 +39,10 @@ interface Store {
   snack: SnackMsg | null;
   bulkIds: Set<string>;
   bulkMode: boolean;
+  listFilter: string | null;
   setView: (v: View) => void;
   setTag: (t: string | null) => void;
+  setListFilter: (id: string | null) => void;
   setSearch: (s: string) => void;
   setSort: (s: SortMode) => void;
   open: (id: string | null) => void;
@@ -79,6 +86,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [snack, setSnack] = useState<SnackMsg | null>(null);
   const [bulkIds, setBulkIds] = useState<Set<string>>(new Set());
   const bulkMode = bulkIds.size > 0;
+  const [listFilter, setListFilter] = useState<string | null>(null);
+  const listFilterRef = useRef(listFilter);
+  listFilterRef.current = listFilter;
   const tasksRef = useRef<Task[]>([]);
   tasksRef.current = tasks;
   const viewRef = useRef(view);
@@ -89,7 +99,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ---------- Yükle / kaydet ----------
   useEffect(() => {
     (async () => {
-      await setupNotifications();
       const [list, s] = await Promise.all([loadTasks(), loadPref<SortMode>('sort')]);
       setTasks(list);
       if (s) setSortState(s);
@@ -106,7 +115,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!loaded) return;
     const pending = tasks.filter((t) => !t.completed).length;
-    Notifications.setBadgeCountAsync(pending).catch(() => {});
+    setBadgeCount(pending);
   }, [tasks, loaded]);
 
   // ---------- Yardımcılar ----------
@@ -147,12 +156,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       notes: '',
       priority: 1,
       tags: tagRef.current ? [tagRef.current] : [],
-      dueDate: viewRef.current === 'today' ? todayStr() : viewRef.current === 'upcoming' ? addDays(todayStr(), 1) : null,
+      dueDate: viewRef.current === 'upcoming' ? addDays(todayStr(), 1) : todayStr(),
       dueTime: null,
       order: now,
       reminder: null,
       subtasks: [],
       images: [],
+      listId: listFilterRef.current ?? 'general',
       completed: false,
       completedAt: null,
       createdAt: now,
@@ -164,6 +174,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setTasks(next);
     if (viewRef.current === 'done' || viewRef.current === 'overdue') setViewState('all');
     incrementCreated();
+    setSelectedId(t.id);
   }, []);
 
   const duplicateTask = useCallback((id: string) => {
@@ -251,6 +262,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         mutate(id, () => ({ reminder: null }));
         return;
       }
+      await setupNotifications();
       const granted = await ensurePermission();
       if (!granted) {
         Alert.alert('Bildirim izni kapalı', 'Hatırlatıcıların çalması için telefon ayarlarından bu uygulamaya bildirim izni ver.');
@@ -388,7 +400,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const handled = useRef(new Set<string>());
   useEffect(() => {
     if (!loaded) return;
-    const handle = (resp: Notifications.NotificationResponse | null) => {
+    if (isExpoGo) return;
+    const handle = (resp: any) => {
       if (!resp) return;
       const key = resp.notification.request.identifier + ':' + resp.notification.date + ':' + resp.actionIdentifier;
       if (handled.current.has(key)) return;
@@ -398,20 +411,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (resp.actionIdentifier === ACTION_SNOOZE) snooze(taskId, 10);
       else if (resp.actionIdentifier === ACTION_DONE) toggleComplete(taskId, true);
       else setSelectedId(taskId);
-      try {
-        Notifications.clearLastNotificationResponse();
-      } catch {
-        /* web'de desteklenmez */
-      }
+      clearLastResponse();
     };
-    try {
-      // Uygulama bir bildirime dokunularak açıldıysa onu işle
-      handle(Notifications.getLastNotificationResponse());
-    } catch {
-      /* web'de desteklenmez */
-    }
-    const sub = Notifications.addNotificationResponseReceivedListener(handle);
-    return () => sub.remove();
+    handle(getLastResponse());
+    const sub = addResponseListener(handle);
+    return () => sub?.remove();
   }, [loaded, snooze, toggleComplete]);
 
   const value = useMemo<Store>(
@@ -426,6 +430,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       snack,
       bulkIds,
       bulkMode,
+      listFilter,
       setView: (v) => {
         setViewState(v);
         setTagState(null);
@@ -434,6 +439,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setTagState(t);
         if (t && viewRef.current === 'done') setViewState('all');
       },
+      setListFilter: (id) => setListFilter(id),
       setSearch,
       setSort: (s) => {
         setSortState(s);
@@ -460,7 +466,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       showSnack,
       hideSnack: () => setSnack(null),
     }),
-    [loaded, tasks, view, tag, search, sort, selectedId, snack, bulkIds, bulkMode, addTask, duplicateTask, update, toggleComplete, remove, setReminder, snooze, addImages, removeImage, reorder, enterBulk, toggleBulk, exitBulk, bulkComplete, bulkDelete, doExport, doImport, showSnack],
+    [loaded, tasks, view, tag, search, sort, selectedId, snack, bulkIds, bulkMode, listFilter, addTask, duplicateTask, update, toggleComplete, remove, setReminder, snooze, addImages, removeImage, reorder, enterBulk, toggleBulk, exitBulk, bulkComplete, bulkDelete, doExport, doImport, showSnack],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

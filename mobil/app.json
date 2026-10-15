@@ -16,7 +16,11 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.nasrettinuygulama.islistesi"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -32,6 +36,11 @@
       "expo-notifications",
       "expo-sharing",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6c4a5780-a193-42e7-a78a-8ac33a1b01ff"
+      }
+    }
   }
 }

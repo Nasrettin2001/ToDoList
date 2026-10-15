@@ -1,4 +1,3 @@
-import Constants from 'expo-constants';
 import type * as NotificationsType from 'expo-notifications';
 import { Platform } from 'react-native';
 import type { Task } from './types';
@@ -8,12 +7,19 @@ export const CATEGORY = 'reminder';
 export const ACTION_SNOOZE = 'snooze10';
 export const ACTION_DONE = 'done';
 
-export const isExpoGo = Constants.executionEnvironment === 'storeClient';
+let isExpoGoEnv = false;
+try {
+  const Constants = require('expo-constants').default;
+  isExpoGoEnv = Constants?.executionEnvironment === 'storeClient';
+} catch {}
+export const isExpoGo = isExpoGoEnv;
 
-// Expo Go'da expo-notifications modülünü hiç yükleme — import anında crash veriyor
-const Notifications: typeof NotificationsType | null = isExpoGo
-  ? null
-  : require('expo-notifications');
+let Notifications: typeof NotificationsType | null = null;
+if (!isExpoGo) {
+  try {
+    Notifications = require('expo-notifications');
+  } catch {}
+}
 
 if (Notifications) {
   Notifications.setNotificationHandler({

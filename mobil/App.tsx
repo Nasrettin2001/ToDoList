@@ -108,10 +108,6 @@ function Home() {
 
   const emptyText = s.search ? 'Aramayla eşleşen görev yok.' : s.tag ? 'Bu etikette görev yok.' : EMPTY[s.view];
 
-  if (showOnboarding) {
-    return <Onboarding onDone={() => { savePref('onboarding', 'done'); setShowOnboarding(false); }} />;
-  }
-
   // --- Segment data ---
   const viewSegments = useMemo(() => {
     const segs: { key: string; label: string; count?: number }[] = VIEWS.map((v) => ({
@@ -152,6 +148,10 @@ function Home() {
   const onListSelect = (key: string) => {
     s.setListFilter(key === '_all' ? null : key === s.listFilter ? null : key);
   };
+
+  if (showOnboarding) {
+    return <Onboarding onDone={() => { savePref('onboarding', 'done'); setShowOnboarding(false); }} />;
+  }
 
   // --- Sub-header segment bar (fixed 44px height for all tabs) ---
   const renderSubHeader = () => {

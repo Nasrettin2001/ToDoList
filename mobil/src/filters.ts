@@ -29,7 +29,7 @@ export function inView(t: Task, view: View): boolean {
       return (!t.completed && ((!!t.dueDate && t.dueDate <= today) || remDay === today)) || completedToday(t);
     case 'upcoming': {
       const end = addDays(today, 7);
-      const inRange = (d: string | null) => !!d && d > today && d <= end;
+      const inRange = (d: string | null) => !!d && d >= today && d <= end;
       return (!t.completed && (inRange(t.dueDate) || inRange(remDay))) || completedToday(t);
     }
     case 'overdue':
